@@ -1,0 +1,151 @@
+<pre style="font-family:monospace;color: rgb(0, 0, 0); background-color: rgb(255, 255, 255); font-weight: 400; ">sim = <span style="color: rgb(0, 0, 255); font-weight: 400;">require</span><span style="color: rgb(163, 21, 21); font-weight: 400;">'sim'</span>
+simUI = <span style="color: rgb(0, 0, 255); font-weight: 400;">require</span><span style="color: rgb(163, 21, 21); font-weight: 400;">'simUI'</span>
+
+<span style="color: rgb(0, 0, 0); font-weight: 400;"><span style="color: rgb(0, 0, 255); font-weight: 400;">function</span> <span style="color: rgb(163, 21, 21); font-weight: 400;">sysCall_init</span><span style="color: rgb(0, 0, 0); font-weight: 400;">()</span></span>
+         
+    <span style="color: rgb(0, 128, 0); font-weight: 400;">-- This is executed exactly once, the first time this script is executed</span>
+    
+    <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Setup sensors</span>
+    
+    bubbleRobBase = sim.getObject(<span style="color: rgb(163, 21, 21); font-weight: 400;">'..'</span>)
+    leftMotor = sim.getObject(<span style="color: rgb(163, 21, 21); font-weight: 400;">"../leftMotor"</span>)
+    rightMotor = sim.getObject(<span style="color: rgb(163, 21, 21); font-weight: 400;">"../rightMotor"</span>)
+    forwardSensor = sim.getObject(<span style="color: rgb(163, 21, 21); font-weight: 400;">"../forwardSensor"</span>)
+    leftSensor = sim.getObject(<span style="color: rgb(163, 21, 21); font-weight: 400;">"../leftSensor"</span>)
+    humanSensor = sim.getObject(<span style="color: rgb(163, 21, 21); font-weight: 400;">"../humanSensor"</span>)
+      
+    <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Setup rotation for human sensor</span>
+    
+    rotationAxis = {<span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>}
+    axisPosition = {<span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>}
+    rotationAngle = <span style="color: rgb(0, 0, 255); font-weight: 400;">math</span>.<span style="color: rgb(0, 0, 255); font-weight: 400;">rad</span>(<span style="color: rgb(0, 0, 0); font-weight: 400;">10</span>)  
+
+    <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Setup humans</span>
+ 
+    billTheHuman = sim.getObject(<span style="color: rgb(163, 21, 21); font-weight: 400;">"/Bill/Bill"</span>)
+    jakeTheHuman = sim.getObject(<span style="color: rgb(163, 21, 21); font-weight: 400;">"/Jake/Jake"</span>)
+    samTheHuman = sim.getObject(<span style="color: rgb(163, 21, 21); font-weight: 400;">"/Sam/Sam"</span>)
+   
+    humanCollection = sim.createCollection(<span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>)
+    sim.addItemToCollection(humanCollection, sim.handle_tree, billTheHuman, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>)
+    sim.addItemToCollection(humanCollection, sim.handle_tree, jakeTheHuman, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>)
+    sim.addItemToCollection(humanCollection, sim.handle_tree, samTheHuman, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>)
+    sim.setObjectInt32Param(humanSensor, sim.proxintparam_entity_to_detect, humanCollection)
+    
+    <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Setup bubbleRob</span>
+    
+    minMaxSpeed = {<span style="color: rgb(0, 0, 0); font-weight: 400;">50</span> * <span style="color: rgb(0, 0, 255); font-weight: 400;">math</span>.<span style="color: rgb(0, 0, 255); font-weight: 400;">pi</span> / <span style="color: rgb(0, 0, 0); font-weight: 400;">180</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">500</span> * <span style="color: rgb(0, 0, 255); font-weight: 400;">math</span>.<span style="color: rgb(0, 0, 255); font-weight: 400;">pi</span> / <span style="color: rgb(0, 0, 0); font-weight: 400;">180</span>} <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Min and max speeds for each motor</span>
+    robotCollection = sim.createCollection(<span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>)
+    sim.addItemToCollection(robotCollection, sim.handle_tree, bubbleRobBase, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>)
+    distanceSegment = sim.addDrawingObject(sim.drawing_lines, <span style="color: rgb(0, 0, 0); font-weight: 400;">4</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">-1</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>, {<span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>})
+    robotTrace = sim.addDrawingObject(sim.drawing_linestrip + sim.drawing_cyclic, <span style="color: rgb(0, 0, 0); font-weight: 400;">2</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">-1</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">1200</span>, {<span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>}, <span style="color: rgb(163, 21, 21); font-weight: 400;">nil</span>, <span style="color: rgb(163, 21, 21); font-weight: 400;">nil</span>, {<span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>})
+    
+    <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Create the custom UI:</span>
+    
+    xml = <span style="color: rgb(163, 21, 21); font-weight: 400;">'&lt;ui title="'</span>..sim.getObjectAlias(bubbleRobBase,<span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>)..<span style="color: rgb(163, 21, 21); font-weight: 400;">' speed" closeable="false" resizable="false" activate="false"&gt;'</span>..<span style="color: rgb(163, 21, 21); font-weight: 400;">[[
+                &lt;hslider minimum="0" maximum="100" on-change="speedChange_callback" id="1"/&gt;
+            &lt;label text="" style="* {margin-left: 300px;}"/&gt;
+        &lt;/ui&gt;
+        ]]</span>
+    ui = simUI.<span style="color: rgb(0, 0, 255); font-weight: 400;">create</span>(xml)
+    speed = (minMaxSpeed[<span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>] + minMaxSpeed[<span style="color: rgb(0, 0, 0); font-weight: 400;">2</span>]) * <span style="color: rgb(0, 0, 0); font-weight: 400;">0.5</span>
+    simUI.setSliderValue(ui, <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>, <span style="color: rgb(0, 0, 0); font-weight: 400;">100</span> * (speed - minMaxSpeed[<span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>]) / (minMaxSpeed[<span style="color: rgb(0, 0, 0); font-weight: 400;">2</span>] - minMaxSpeed[<span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>]))
+ 
+    <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Global state variables</span>
+    
+    foundWall = <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>
+    foundBill = <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>
+    foundJake = <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>
+    foundSam = <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span>
+    
+<span style="color: rgb(0, 0, 255); font-weight: 400;">end</span>
+
+<span style="color: rgb(0, 0, 0); font-weight: 400;"><span style="color: rgb(0, 0, 255); font-weight: 400;">function</span> <span style="color: rgb(163, 21, 21); font-weight: 400;">sysCall_sensing</span><span style="color: rgb(0, 0, 0); font-weight: 400;">()</span></span>
+
+    <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Distance indicator</span>
+
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">local</span> result, distData = sim.checkDistance(robotCollection, sim.handle_all)
+    
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">if</span> result &gt; <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span> <span style="color: rgb(0, 0, 255); font-weight: 400;">then</span>
+        sim.addDrawingObjectItem(distanceSegment, <span style="color: rgb(163, 21, 21); font-weight: 400;">nil</span>)
+        sim.addDrawingObjectItem(distanceSegment, distData)
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">end</span>
+    
+    <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Trailing path</span>
+    
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">local</span> p = sim.getObjectPosition(bubbleRobBase)
+    sim.addDrawingObjectItem(robotTrace, p)
+    
+<span style="color: rgb(0, 0, 255); font-weight: 400;">end</span> 
+
+<span style="color: rgb(0, 0, 0); font-weight: 400;"><span style="color: rgb(0, 0, 255); font-weight: 400;">function</span> <span style="color: rgb(163, 21, 21); font-weight: 400;">speedChange_callback</span><span style="color: rgb(0, 0, 0); font-weight: 400;">(ui, id, newVal)</span></span>
+
+    speed = minMaxSpeed[<span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>] + (minMaxSpeed[<span style="color: rgb(0, 0, 0); font-weight: 400;">2</span>] - minMaxSpeed[<span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>]) * newVal / <span style="color: rgb(0, 0, 0); font-weight: 400;">100</span>
+    
+<span style="color: rgb(0, 0, 255); font-weight: 400;">end</span>
+
+<span style="color: rgb(0, 0, 0); font-weight: 400;"><span style="color: rgb(0, 0, 255); font-weight: 400;">function</span> <span style="color: rgb(163, 21, 21); font-weight: 400;">sysCall_actuation</span><span style="color: rgb(0, 0, 0); font-weight: 400;">()</span></span> 
+
+    fwdResult = sim.readProximitySensor(forwardSensor) <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Read the proximity sensor</span>
+    lftResult = sim.readProximitySensor(leftSensor) <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Read the proximity sensor</span>
+    
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">if</span> (fwdResult == <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>) <span style="color: rgb(0, 0, 255); font-weight: 400;">then</span>
+    
+        foundWall = <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>
+    
+        <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Drift to the right</span>
+        sim.setJointTargetVelocity(rightMotor, -speed * <span style="color: rgb(0, 0, 0); font-weight: 400;">2</span>)
+        sim.setJointTargetVelocity(leftMotor, speed * <span style="color: rgb(0, 0, 0); font-weight: 400;">2</span>)
+
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">else</span>
+        <span style="color: rgb(0, 0, 255); font-weight: 400;">if</span> (lftResult == <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>) <span style="color: rgb(0, 0, 255); font-weight: 400;">then</span>
+        
+            foundWall = <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>
+        
+            <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Move forward</span>
+            sim.setJointTargetVelocity(rightMotor, speed)
+            sim.setJointTargetVelocity(leftMotor, speed)
+        
+        <span style="color: rgb(0, 0, 255); font-weight: 400;">else</span>
+        
+            <span style="color: rgb(0, 0, 255); font-weight: 400;">if</span> (foundWall == <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>) <span style="color: rgb(0, 0, 255); font-weight: 400;">then</span>
+                <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Turn left</span>
+                sim.setJointTargetVelocity(rightMotor, speed * <span style="color: rgb(0, 0, 0); font-weight: 400;">2</span>)
+                sim.setJointTargetVelocity(leftMotor, speed / <span style="color: rgb(0, 0, 0); font-weight: 400;">4</span>)
+            <span style="color: rgb(0, 0, 255); font-weight: 400;">end</span>
+       
+        <span style="color: rgb(0, 0, 255); font-weight: 400;">end</span>
+
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">end</span>
+    
+    <span style="color: rgb(0, 128, 0); font-weight: 400;">-- Sensor rotation</span>
+    
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">local</span> currentPose = sim.getObjectPose(humanSensor, sim.handle_parent)
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">local</span> newPose = sim.rotateAroundAxis(currentPose, rotationAxis, axisPosition, rotationAngle)
+    sim.setObjectPose(humanSensor, sim.handle_parent, newPose)
+    
+    res, dist, point, obj, n = sim.readProximitySensor(humanSensor)
+
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">if</span> (foundBill == <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span> <span style="color: rgb(0, 0, 255); font-weight: 400;">and</span> res == <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span> <span style="color: rgb(0, 0, 255); font-weight: 400;">and</span> sim.getObjectName(obj) == <span style="color: rgb(163, 21, 21); font-weight: 400;">"Bill"</span>) <span style="color: rgb(0, 0, 255); font-weight: 400;">then</span>
+        <span style="color: rgb(0, 0, 255); font-weight: 400;">print</span>(<span style="color: rgb(163, 21, 21); font-weight: 400;">"Found Bill..."</span>)
+        foundBill = <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">end</span>
+    
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">if</span> (foundJake == <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span> <span style="color: rgb(0, 0, 255); font-weight: 400;">and</span> res == <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span> <span style="color: rgb(0, 0, 255); font-weight: 400;">and</span> sim.getObjectName(obj) == <span style="color: rgb(163, 21, 21); font-weight: 400;">"Jake0"</span>) <span style="color: rgb(0, 0, 255); font-weight: 400;">then</span>
+        <span style="color: rgb(0, 0, 255); font-weight: 400;">print</span>(<span style="color: rgb(163, 21, 21); font-weight: 400;">"Found Jake..."</span>)
+        foundJake = <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">end</span>
+    
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">if</span> (foundSam == <span style="color: rgb(0, 0, 0); font-weight: 400;">0</span> <span style="color: rgb(0, 0, 255); font-weight: 400;">and</span> res == <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span> <span style="color: rgb(0, 0, 255); font-weight: 400;">and</span> sim.getObjectName(obj) == <span style="color: rgb(163, 21, 21); font-weight: 400;">"Bill_body"</span>) <span style="color: rgb(0, 0, 255); font-weight: 400;">then</span>
+        <span style="color: rgb(0, 0, 255); font-weight: 400;">print</span>(<span style="color: rgb(163, 21, 21); font-weight: 400;">"Found Sam..."</span>)
+        foundSam = <span style="color: rgb(0, 0, 0); font-weight: 400;">1</span>
+    <span style="color: rgb(0, 0, 255); font-weight: 400;">end</span>
+    
+<span style="color: rgb(0, 0, 255); font-weight: 400;">end</span>
+
+<span style="color: rgb(0, 0, 0); font-weight: 400;"><span style="color: rgb(0, 0, 255); font-weight: 400;">function</span> <span style="color: rgb(163, 21, 21); font-weight: 400;">sysCall_cleanup</span><span style="color: rgb(0, 0, 0); font-weight: 400;">()</span></span>
+
+    simUI.destroy(ui)
+    
+<span style="color: rgb(0, 0, 255); font-weight: 400;">end</span> 
+</pre>
